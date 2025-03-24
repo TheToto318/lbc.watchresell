@@ -19,74 +19,88 @@ def GetProducts(page_source):
         print("Not found div_all_products")
         return None  
     
-    for product_div in div_all_products:
+    product_ul_class = div_all_products.find(lambda tag: tag.name == "ul" and tag.get('data-test-id') == 'listing-column')
+    list_item = product_ul_class.find_all("li")
+    for item in list_item:
         product = {}
+        
+        article = item.find("a", {"class": "absolute inset-0"})
 
-        product_a_class = product_div.findChildren("a" , recursive=False)
-        #getting url
-        if len(product_a_class) == 1:
-            product_a_class = product_a_class[0]
-            url = "https://www.leboncoin.fr" + product_a_class.get('href')
+        if (article != None):
+            #getting url
+
+            url = "https://www.leboncoin.fr" + article.get('href')
             id = int(url.split("/")[-1].split(".")[0])
             
             product['url'] = url
             product['id'] = id
 
-
             #title
-            product_title = product_a_class.find("p", {"data-qa-id": "aditem_title"})
-            if product_title:
-                product_title = product_title.text
-                product['title'] = product_title
-
+            title_span = article.find("span", {"class", "hidden"})
+            if title_span:
+                product_title = title_span.text.strip()
+                if product_title:
+                    product['title'] = product_title
+            
             #price
-            product_price = product_a_class.find("p", {"data-test-id": "price"})
-            if product_price:
-                product_price = product_price.text
-            product['price'] = product_price
+            p_price = item.find("p", {"data-test-id": "price"})
+            if p_price:
+                product_price = p_price.find("span", {"class": ""})
+                if product_price:
+                    product['price'] = product_price.text.strip()
             
             # Image
             # Find the second image in product_a_class (you can complete this part)
             # For example, to find the second image source:
-            image = product_a_class.find("img", {"alt": ""})
+            image = item.find("img", {"alt": ""})
             product['img_src'] = image.get("src") if image else None
 
             # Marque only if lifestyle view
             if lifestyle == 1:
-                marque = product_a_class.find("div", {"data-test-id": "ad-params-light"})
+                marque = item.find("div", {"data-test-id": "ad-params-light"})
                 product['marque'] = marque.text
             else:
                 product['marque'] = None
             
             # Ville et date
-            ville = product_a_class.find("span", {"class": "mr-[1.2rem] last:mr-none"})
-            date = product_a_class.find("span", {"class": "relative inline-block w-full before:absolute before:right-full before:top-none before:hidden before:w-[1.2rem] before:text-center before:font-bold before:content-['·'] tiny:w-auto tiny:before:inline-block"})
-            if ville:
-                ville = ville.text
-            if date:
-                date = date.text
+            div_date_ville = item.find("div", {"class": "flex h-full flex-col justify-between"})
+            if div_date_ville:
+                span_date_ville = div_date_ville.find_all("span")
+                p_date_ville = div_date_ville.find_all("p")
+                span_date_ville_string = []
+                if span_date_ville != None:
+                    for span in span_date_ville:
+                        if span != None:
+                            span_date_ville_string.append(span.text.strip())
+                if p_date_ville != None:
+                    for p in p_date_ville:
+                        if p != None:
+                            span_date_ville_string.append(p.text.strip())
                 
-            product['ville'] = ville if ville else "non spécifié"
-            product['date'] = date if date else "non spécifié"
-        
-            etat = product_a_class.find_all("span", attrs={"data-spark-component": "tag"})
-            if etat:
-                if len(etat) == 1:
-                    product['etat'] = etat[0].text
+                if any(s in s in ["Livraison", "Achat en cours"] for s in span_date_ville_string):
+                    ville = span_date_ville_string[5]
+                    date = span_date_ville_string[6]
+                    etat = span_date_ville_string[1]
                 else:
-                    # Lifestyle view, ignore the first "a la une" tag
-                    product['etat'] = etat[1].text
-            else:
-                product['etat'] = "Main propre"
+                    ville = span_date_ville_string[4]
+                    date = span_date_ville_string[5]
+                    etat = None
+                    
+                product['ville'] = ville if ville else "non spécifié"
+                product['date'] = date if date else "non spécifié"
 
-            #author
-            author = product_a_class.find("div", {"class": "mb-md flex items-center gap-sm"})
-            author = author.find("span")
-            product['author'] = author.text if author else None
-
+                if etat:
+                    product['etat'] = etat
+                else:
+                    product['etat'] = "Main propre"
+            
+            # No more authors shown in search pages
+            # #author
+            # author = item.find("div", {"class": "mb-md flex items-center gap-sm"})
+            # author = author.find("span")
+            # product['author'] = author.text if author else None
 
             products_list.append(product)
-    
     return products_list
 
 if __name__ == "__main__":
