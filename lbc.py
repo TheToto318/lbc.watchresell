@@ -171,7 +171,7 @@ class Lbc:
                     local_max_id =  max(local_max_id, product['id'])
                 if local_max_id > max_id:
                     max_id = local_max_id
-                print("No new ad found, time :", datetime.now())
+                print("No new ad found, time : {}, Last offer ID:{}".format(datetime.now(), local_max_id))
             except Exception as e:
                 print(e)
                 # #send error embed
