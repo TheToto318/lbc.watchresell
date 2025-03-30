@@ -111,7 +111,7 @@ class Lbc:
         embed.add_field(name="Ville 🏙️", value=article["ville"], inline=True)
         embed.add_field(name="Date 🕒", value=article["date"], inline=True)
         embed.add_field(name="Etat", value=article["etat"], inline=True)
-        embed.add_field(name="Auteur 👤", value=article["author"], inline=True)
+        # embed.add_field(name="Auteur 👤", value=article["author"], inline=True)
 
         discord_bot.bot.loop.create_task(
             channel_obj.send(embed=embed)
